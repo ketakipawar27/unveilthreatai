@@ -1,0 +1,10 @@
+<svg width="220" height="36" viewBox="0 0 220 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- More compact shield -->
+  <path d="M20 2L34 7V14C34 22 28 30 20 34C12 30 6 22 6 14V7L20 2Z" fill="#60A5FA"/>
+  <path d="M20 5L10 9V14C10 21 15 27 20 31C25 27 30 21 30 14V9L20 5Z" fill="#93C5FD"/>
+  
+  <!-- Brand text -->
+  <text x="52" y="24" font-family="Outfit, sans-serif" font-size="20" font-weight="600" fill="#FFFFFF">
+    UnveilThreatAI
+  </text>
+</svg>
