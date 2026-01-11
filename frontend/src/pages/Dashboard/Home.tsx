@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import RippleGraph from "../../components/report/RippleGraph";
+
+import ConsequenceGraph from "../../components/report/ConsequenceGraph";
 import RiskMeter from "../../components/report/RiskMeter";
 import MetadataExposer from "../../components/report/MetadataExposer";
 import PageMeta from "../../components/common/PageMeta";
@@ -10,10 +11,41 @@ import FullReportModal from "../../components/report/FullReportModal";
 import FileInfoCard from "../../components/report/FileInfoCard";
 
 export default function Home() {
-  const [fileUploaded, setFileUploaded] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [fileType, setFileType] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
+
+  // 🔥 THIS IS THE BACKEND CALL
+  const analyzeFile = async (file: File) => {
+    setLoading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      console.log("BACKEND RESPONSE:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Analysis failed");
+      }
+
+      setAnalysis(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -23,8 +55,10 @@ export default function Home() {
       />
 
       <div className="grid grid-cols-12 gap-4 md:gap-6">
+
         <AnimatePresence mode="wait">
-          {!fileUploaded ? (
+          {!analysis ? (
+            /* ================= UPLOAD ================= */
             <motion.div
               key="upload"
               initial={{ opacity: 0, y: 30 }}
@@ -35,36 +69,51 @@ export default function Home() {
             >
               <UploadCard
                 onUpload={(file: File) => {
-                  setFileUploaded(true);
-                  setFileName(file.name);
-                  setFileType(file.type);
+                  setFile(file);
+                  analyzeFile(file); // 🔥 START ANALYSIS HERE
                 }}
               />
+
+              {loading && (
+                <p className="mt-4 text-sm text-gray-500">
+                  Analyzing file, please wait…
+                </p>
+              )}
+
+              {error && (
+                <p className="mt-4 text-sm text-red-500">
+                  {error}
+                </p>
+              )}
             </motion.div>
           ) : (
             <>
-              {/* Left - File Info + Ripple Graph */}
+              {/* ================= LEFT ================= */}
               <motion.div
                 key="left"
                 initial={{ opacity: 0, x: -40 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
+                transition={{ duration: 0.6 }}
                 className="col-span-12 lg:col-span-7 space-y-6"
               >
-                <FileInfoCard fileName={fileName} fileType={fileType} />
-                <RippleGraph />
+                <FileInfoCard
+                  fileName={file?.name || ""}
+                  fileType={file?.type || ""}
+                />
+
+                <ConsequenceGraph graph={analysis.consequence_graph} />
               </motion.div>
 
-              {/* Right - stacked cards */}
+              {/* ================= RIGHT ================= */}
               <motion.div
                 key="right"
                 initial={{ opacity: 0, x: 40 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                transition={{ duration: 0.6, delay: 0.15 }}
                 className="col-span-12 lg:col-span-5 space-y-6"
               >
-                <RiskMeter />
-                <MetadataExposer />
+                <RiskMeter risk={analysis.ai_output?.risk_assessment} />
+                <MetadataExposer aiOutput={analysis.ai_output} />
                 <ViewFullReport onOpenReport={() => setShowReport(true)} />
               </motion.div>
             </>
@@ -72,17 +121,18 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* Full Report Modal */}
+      {/* ================= FULL REPORT MODAL ================= */}
       <AnimatePresence>
-        {showReport && (
+        {showReport && analysis && (
           <motion.div
-            key="modal"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
           >
-            <FullReportModal onClose={() => setShowReport(false)} />
+            <FullReportModal
+              data={analysis}
+              onClose={() => setShowReport(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>

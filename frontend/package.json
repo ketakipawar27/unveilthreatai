@@ -24,6 +24,7 @@
     "axios": "^1.11.0",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
+    "d3": "^7.9.0",
     "flatpickr": "^4.6.13",
     "framer-motion": "^12.23.12",
     "lottie-react": "^2.4.1",
